@@ -46,3 +46,35 @@ def concat_oss_rpdb_data_binary_search_huawei4g(oss_list, rpdb_list):
                 low = mid + 1
 
     return concatenated_result
+
+def write_lte_data_to_antennas_file(concatenated_oss_rpdb_data):
+    tech = 'LTE'
+    with open("Antennas.txt", "a") as antennas_file:
+        for row in concatenated_oss_rpdb_data:
+            antennas_file.write(f"{tech}\t"
+                                f"{'RNC' + str(concatenated_oss_rpdb_data[row][8])}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][8])}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][0])}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][1])}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][1])}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][6])}\t"  # coordinate
+                                f"{str(concatenated_oss_rpdb_data[row][7])}\t"  # coordinate
+                                f"{str(concatenated_oss_rpdb_data[row][3])}\t"
+                                f"{'true'}\t"
+                                f"{'5.0'}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][3]) + '/' + '1'}\t"
+                                f"{'dummy'}\t"  # antenna directory
+                                f"\t"
+                                f"{str(concatenated_oss_rpdb_data[row][6])}\t"  # coordinate
+                                f"{str(concatenated_oss_rpdb_data[row][7])}\t"  # coordinate
+                                f"{'55'}\t"
+                                f"{'0.0'}\t"
+                                f"{'359'}\t"
+                                f"{'3.0'}\t"
+                                f"{3.0}\t"
+                                f"{0.0}\t"
+                                f"{0.0}\t"
+                                f"\t"
+                                f"{'false'}\t"
+                                f"\t"
+                                f"{'Overground'}\n")
