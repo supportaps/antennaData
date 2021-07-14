@@ -239,13 +239,10 @@ def main():
             #antenna_number_hua = str(antenna_number_hua)[-1]
             azimuth = int(list_for_antenna_file_huawei[row][10])
             antenna_profile_from_rpdb_hua = list_for_antenna_file_huawei[row][6]
+            nodeBname = str(list_for_antenna_file_huawei[row][22]).replace('\"','')
+            cellName = str(list_for_antenna_file_huawei[row][15]).replace('\"','')
 
-            #if antenna_number_hua == 1 or antenna_number_hua == 4 or antenna_number_hua == 7:
-                #antenna_number_hua = 1
-            #elif antenna_number_hua == 2 or antenna_number_hua == 5 or antenna_number_hua == 8:
-                #antenna_number_hua = 2
-            #elif antenna_number_hua == 3 or antenna_number_hua == 6 or antenna_number_hua == 9:
-                #antenna_number_hua = 3
+
 
             if azimuth == 360 or azimuth in range(859, 999):
                 azimuth = 0
@@ -260,12 +257,12 @@ def main():
             antennas_file.write(f"{tech}\t"
                                     f"{equipment + str(list_for_antenna_file_huawei[row][18])}\t"
                                     f"{str(list_for_antenna_file_huawei[row][18])}\t"
-                                    f"{str(list_for_antenna_file_huawei[row][22])}\t"
+                                    f"{nodeBname}\t"
                                     f"{str(list_for_antenna_file_huawei[row][18]) + '_' + str(list_for_antenna_file_huawei[row][19])}\t"
                                     f"{'N/A'}\t"
                                     f"{list_for_antenna_file_huawei[row][8]}\t"  # coordinate
                                     f"{list_for_antenna_file_huawei[row][7]}\t"  # coordinate
-                                    f"{list_for_antenna_file_huawei[row][15]}\t"
+                                    f"{cellName}\t"
                                     f"{'true'}\t"
                                     f"{'5.0'}\t"
                                     f"{str(list_for_antenna_file_huawei[row][19]) + '/' + str(azimuth)}\t"
