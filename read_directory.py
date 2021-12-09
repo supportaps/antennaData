@@ -1,5 +1,6 @@
 import os
 import config
+import shutil
 
 
 def read_antenna_directory():
@@ -14,7 +15,12 @@ def read_antenna_directory():
     return antenna_profile_list
 
 
+def copy_antenna_file_to_remote():
+    src_path = config.local_antennas_file_path + r'\Antennas.txt'
+    dst_path = config.remote_antennas_file_path
 
-
+    shutil.copy(src_path, dst_path)
+    print("The Antenna file has been copied")
+    print(src_path, dst_path)
 if __name__ == '__main__':
-    read_antenna_directory()
+    copy_antenna_file_to_remote()
