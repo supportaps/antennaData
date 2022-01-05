@@ -468,7 +468,7 @@ def main():
                                 f"{'Overground'}\n")
 
     copy_antenna_file_to_remote()
-    write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_IOT(iot_concat_result)
+    write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_IOT(nsn_changed_nodeb_abrv_IOT)
 
     copy_antenna_file_to_remote()
 
