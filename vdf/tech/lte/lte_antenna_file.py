@@ -131,10 +131,10 @@ def get_oss_data_zte4g():
 
 
 def get_oss_data_NSN4G():
-    conn_db = pymysql.connect(host=config.host_mysql, user=config.user_mysql, password=config.password_mysql,
-                              db=config.db_mysql)
+    conn_db = pymysql.connect(host=config.host_mysql_v, user=config.user_mysql_v, password=config.password_mysql_v,
+                              db=config.db_mysql_v)
     cursor = conn_db.cursor()
-    cursor.execute(config.query_oss_NSN4g)
+    cursor.execute(config.query_oss_NSN4g_Voytenko_db)
     result = cursor.fetchall()
     print(result)
     with open(config.path_test4, "w") as test_file:
@@ -147,10 +147,10 @@ def get_oss_data_NSN4G():
     print("GOT OSS DATA NSN 4G")
 
 def get_oss_bts_data_NSN4g():
-    conn_db = pymysql.connect(host=config.host_mysql, user=config.user_mysql, password=config.password_mysql,
-                              db=config.db_mysql)
+    conn_db = pymysql.connect(host=config.host_mysql_v, user=config.user_mysql_v, password=config.password_mysql_v,
+                              db=config.db_mysql_v)
     cursor = conn_db.cursor()
-    cursor.execute(config.query_oss_nsn4g_btsdata)
+    cursor.execute(config.query_oss_nsn4g_btsdata_Voytenko_db)
     result = cursor.fetchall()
     print(result)
     with open(config.path_test5, "w") as test_file:
@@ -174,6 +174,8 @@ def concat_iot_cells_with_invalid_antennas(oss_list, rpdb_list):
                         temp_cell_name_iot = str(oss_list[iot_cell][3])
                         concatenated_result.append(oss_list[iot_cell] + rpdb_list[rpdb_cell])
 
+
+
     with open(config.path_test6, "w") as test_file:
         for row in concatenated_result:
             test_file.write(str(row) + '\n')
@@ -187,6 +189,9 @@ def write_lte_data_to_antennas_file_huawei(concatenated_oss_rpdb_data):
     with open(config.local_antennas_file_lte, "a") as antennas_file:
         for row in range(len(concatenated_oss_rpdb_data)):
             antenna_profile_from_rpdb_hua = concatenated_oss_rpdb_data[row][5]
+            if '/' in antenna_profile_from_rpdb_hua and '.' in antenna_profile_from_rpdb_hua:
+                antenna_profile_from_rpdb_hua = antenna_profile_from_rpdb_hua.replace('/', '-')
+                antenna_profile_from_rpdb_hua = antenna_profile_from_rpdb_hua.replace('.', '-')
             antenna_directory_list = read_antenna_directory()
             antenna_profile_name = antenna_profile_from_rpdb_hua + '.txt'
             for profile in range(len(antenna_directory_list)):
@@ -224,10 +229,15 @@ def write_lte_data_to_antennas_file_huawei(concatenated_oss_rpdb_data):
 
 def write_lte_data_to_antennas_file_zte(concatenated_oss_rpdb_data):
     tech = 'LTE'
+    tdd = 'LT_' #ToDo add the check of TDD or FDD
+    fdd= 'LF_'
     with open(config.local_antennas_file_lte, "a") as antennas_file:
         for row in range(len(concatenated_oss_rpdb_data)):
 
             antenna_profile_from_rpdb_zte = str(concatenated_oss_rpdb_data[row][9])
+            if '/' in antenna_profile_from_rpdb_zte and '.' in antenna_profile_from_rpdb_zte:
+                antenna_profile_from_rpdb_zte = antenna_profile_from_rpdb_zte.replace('/', '-')
+                antenna_profile_from_rpdb_zte = antenna_profile_from_rpdb_zte.replace('.', '-')
             antenna_directory_list = read_antenna_directory()
             antenna_profile_name = antenna_profile_from_rpdb_zte + '.txt'
             for profile in range(len(antenna_directory_list)):
@@ -238,15 +248,15 @@ def write_lte_data_to_antennas_file_zte(concatenated_oss_rpdb_data):
             antennas_file.write(f"{tech}\t"
                                 f"{str(concatenated_oss_rpdb_data[row][7])}\t"
                                 f"{str(concatenated_oss_rpdb_data[row][7])}\t"
-                                f"{str(concatenated_oss_rpdb_data[row][6])}\t"
+                                f"{fdd}{str(concatenated_oss_rpdb_data[row][6])}\t" #enbName
                                 f"{str(concatenated_oss_rpdb_data[row][1])}\t"
                                 f"{str(concatenated_oss_rpdb_data[row][1])}\t"
                                 f"{str(concatenated_oss_rpdb_data[row][10])}\t"  # coordinate
                                 f"{str(concatenated_oss_rpdb_data[row][11])}\t"  # coordinate
-                                f"{str(concatenated_oss_rpdb_data[row][5])}\t" # cell  name
+                                f"{fdd}{str(concatenated_oss_rpdb_data[row][5])}\t" # cell  name
                                 f"{'true'}\t"
                                 f"{'5.0'}\t"
-                                f"{str(concatenated_oss_rpdb_data[row][5]) + '/' + '1'}\t"
+                                f"{fdd}{str(concatenated_oss_rpdb_data[row][5]) + '/' + '1'}\t"
                                 f"{antenna_profile_from_rpdb_zte}\t"  # antenna directory
                                 f"{'ZTE'}\t"
                                 f"{str(concatenated_oss_rpdb_data[row][10])}\t"  # coordinate
@@ -273,12 +283,17 @@ def  write_lte_data_to_antennas_file_NSN(concatenated_oss_rpdb_data):
         antennas_file.write(head)
         antennas_file.write('\n')
         for row in range(len(concatenated_oss_rpdb_data)):
+
             antenna_profile_from_rpdb_nsn = concatenated_oss_rpdb_data[row][6]
+            if '/' in antenna_profile_from_rpdb_nsn and '.' in antenna_profile_from_rpdb_nsn:
+                antenna_profile_from_rpdb_nsn = antenna_profile_from_rpdb_nsn.replace('/', '-')
+                antenna_profile_from_rpdb_nsn = antenna_profile_from_rpdb_nsn.replace('.', '-')
             antenna_directory_list = read_antenna_directory()
             antenna_profile_name = antenna_profile_from_rpdb_nsn + '.txt'
             for profile in range(len(antenna_directory_list)):
                 for antenna in range(len(antenna_directory_list[profile])):
                     if antenna_directory_list[profile][antenna] == antenna_profile_name:
+
                         antenna_profile_from_rpdb_nsn = f"{antenna_directory_list[profile][0]}/{antenna_profile_from_rpdb_nsn}"
 
             antennas_file.write(f"{tech}\t"
@@ -289,7 +304,7 @@ def  write_lte_data_to_antennas_file_NSN(concatenated_oss_rpdb_data):
                                 f"{str(concatenated_oss_rpdb_data[row][1])}\t" #id
                                 f"{str(concatenated_oss_rpdb_data[row][7])}\t"  # coordinate
                                 f"{str(concatenated_oss_rpdb_data[row][8])}\t"  # coordinate
-                                f"{str(concatenated_oss_rpdb_data[row][3])}\t"
+                                f"{str(concatenated_oss_rpdb_data[row][3])}\t" #cellname
                                 f"{'true'}\t"
                                 f"{'5.0'}\t"
                                 f"{str(concatenated_oss_rpdb_data[row][3]) + '/' + '1'}\t"
@@ -308,6 +323,7 @@ def  write_lte_data_to_antennas_file_NSN(concatenated_oss_rpdb_data):
                                 f"{str(concatenated_oss_rpdb_data[row][16])}\t"
                                 f"\t"
                                 f"{'Overground'}\n")
+
     print("The Data has been added to Antenna file")
 
 

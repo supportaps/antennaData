@@ -6,7 +6,9 @@ import pymysql
 
 import config
 from read_directory import read_antenna_directory, copy_antenna_file_to_remote
-from vdf.tech.lte import lte_antenna_file, write_to_antenna_file_lte
+from vdf.tech.gsm import gsm_coordinates_file
+from vdf.tech.lte import lte_antenna_file, write_to_antenna_file_lte, lte_util, lte_invalid_antenna_file
+
 
 
 def get_data_from_wbts_nsn():
@@ -206,7 +208,7 @@ def get_oss_data_zte():
     cursor = conn_db.cursor()
     cursor.execute(config.query_oss_zte_3g)
     result_set_ucell = cursor.fetchall()
-    with open("GET_DATA_FROM_OSS.txt", "a") as test_file:
+    with open("GET_DATA_FROM_OSS_ZTE_3G.txt", "w") as test_file:
         for row in result_set_ucell:
             temp_tuple = (row[0], row[1], row[2], row[3].split('/')[3].replace('ULocationArea=', ''), row[4])
             result_list_ucell.append(temp_tuple)
@@ -222,6 +224,11 @@ def main():
     #------------------------------------------------------------LTE/NSN-----
     res4g_rpdb = lte_antenna_file.get_rpdb_data_4g()
     res4g_oss = lte_antenna_file.get_oss_data_NSN4G()
+
+    invalid_antenna_data = lte_invalid_antenna_file.get_invalid_lte_antennas_data()  # pandas data frame
+
+
+
     res4g_oss_nodeB_name = lte_antenna_file.get_oss_bts_data_NSN4g()
     NSN_concat_result = lte_antenna_file.concat_oss_rpdb_data_binary_search_4g(res4g_oss,
                                                                                res4g_rpdb)
@@ -232,9 +239,11 @@ def main():
     print("NOKIA CONCAT RESULT", nsn_changed_nodeb_abrv)
 
 
+
     lte_antenna_file.write_lte_data_to_antennas_file_NSN(nsn_changed_nodeb_abrv)
     write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_IOT_TEST(nsn_changed_nodeb_abrv_IOT)
-
+    write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_invalid_antennas_TEST(
+        invalid_antenna_data)
     #write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_test(nsn_changed_nodeb_abrv)
 
     #-------------------------------------------------------------LTE/NSN-----
@@ -292,6 +301,9 @@ def main():
             azimuth = int(list_of_antenna_file_zte[row][15])
             # print("AZ", azimuth)
             antenna_profile_from_rpdb_zte = list_of_antenna_file_zte[row][11]
+            if '/' in antenna_profile_from_rpdb_zte and '.' in antenna_profile_from_rpdb_zte:
+                antenna_profile_from_rpdb_zte = antenna_profile_from_rpdb_zte.replace('/', '-')
+                antenna_profile_from_rpdb_zte = antenna_profile_from_rpdb_zte.replace('.', '-')
             # print("PROF", antenna_profile_from_rpdb_zte)
             nodeBnameZte = str(list_of_antenna_file_zte[row][2][:11])
             # print("NodeB", nodeBnameZte)
@@ -366,6 +378,9 @@ def main():
             antenna_number = int(list_for_antenna_file[row][16])
             azimuth = int(list_for_antenna_file[row][10])
             antenna_profile_from_rpdb = list_for_antenna_file[row][6]
+            if '/' in antenna_profile_from_rpdb and '.' in antenna_profile_from_rpdb:
+                antenna_profile_from_rpdb = antenna_profile_from_rpdb.replace('/', '-')
+                antenna_profile_from_rpdb = antenna_profile_from_rpdb.replace('.', '-')
 
             if antenna_number == 1 or antenna_number == 2 or antenna_number == 3:
                 antenna_number = 1
@@ -426,6 +441,9 @@ def main():
             # antenna_number_hua = str(antenna_number_hua)[-1]
             azimuth = int(list_for_antenna_file_huawei[row][10])
             antenna_profile_from_rpdb_hua = list_for_antenna_file_huawei[row][6]
+            if '/' in antenna_profile_from_rpdb_hua and '.' in antenna_profile_from_rpdb_hua:
+                antenna_profile_from_rpdb_hua = antenna_profile_from_rpdb_hua.replace('/', '-')
+                antenna_profile_from_rpdb_hua = antenna_profile_from_rpdb_hua.replace('.', '-')
             nodeBname = str(list_for_antenna_file_huawei[row][22]).replace('\"', '')
             cellName = str(list_for_antenna_file_huawei[row][15]).replace('\"', '')
 
@@ -471,13 +489,17 @@ def main():
     write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_IOT(nsn_changed_nodeb_abrv_IOT)
 
     copy_antenna_file_to_remote()
+#------------------------------------------------2G
+    rpdb_2g = gsm_coordinates_file.get_data_from_rpdb_2G()
+    oss_2g_huawei = gsm_coordinates_file.get_oss_data_huawei_2g()
+    concatenated_2g_data_huawei = gsm_coordinates_file.concat_oss_rpdb_data_binary_search_2g(oss_2g_huawei,rpdb_2g)
+    gsm_coordinates_file.write_gsm_huawei_to_coordinates_file(concatenated_2g_data_huawei)
+#------------------------------------------------Invalid lte nsn antennas
 
-    #rpdb_2g_data = gsm_coordinates_file.get_data_from_rpdb_2G()
-    #oss_huawei_2g_data = gsm_coordinates_file.get_oss_data_huawei_2g()
-    #two_g_huawei_concat_result = gsm_coordinates_file.concat_oss_rpdb_data_binary_search_2g(oss_huawei_2g_data,
-                                                                                            #rpdb_2g_data)
-    #gsm_coordinates_file.write_gsm_huawei_to_coordinates_file(two_g_huawei_concat_result)
-
+    #invalid_antenna_data = lte_util.get_invalid_lte_antennas_data()  # pandas data frame
+    #concatenated_invalid_antenna_data = concat_invalid_data(invalid_antenna_data,res4g_oss,res4g_rpdb)
+    #write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_invalid_antennas_TEST(concatenated_invalid_antenna_data)
+    copy_antenna_file_to_remote()
 
 if __name__ == '__main__':
     profiler = Profile()

@@ -2,8 +2,8 @@ import pymssql
 import pymysql
 import config
 
-def get_data_from_rpdb_2G():
 
+def get_data_from_rpdb_2G():
     conn_db = pymssql.connect(host=config.host_mssql, user=config.user_mssql, password=config.password_mssql,
                               database=config.db_mssql)
     cursor = conn_db.cursor()
@@ -11,20 +11,18 @@ def get_data_from_rpdb_2G():
     result_list_rpdb = []
     result_set = cursor.fetchall()
 
-    with open("GET_DATA_FROM_RPDB_2G.txt", "w") as test_file:
+    with open(config.path_test7, "w") as test_file:
         for row in result_set:
+            print(row[1][-2:])
 
-            if row[1][-2:] == '_D' or row[1][-2:] == '_G' or row[0] is not None:
-
-
+            if row[1][-2:] == "_D" or row[1][-2:] == "_G" or row[0] is not None and row[1][-2:] != "_U":
                 result_list_rpdb.append(row)
-
 
         def sortSecond(val):
             rnc_id_nonetype_check = val[0]
             if rnc_id_nonetype_check is None:
                 rnc_id_nonetype_check = 0
-            return rnc_id_nonetype_check + val[2] + val[3]
+            return str(rnc_id_nonetype_check) + str(val[2]) + str(val[3])
 
         result_list_rpdb.sort(key=sortSecond)
         for row in result_list_rpdb:
@@ -32,28 +30,26 @@ def get_data_from_rpdb_2G():
         return result_list_rpdb
         cursor.close()
 
+
 def get_oss_data_huawei_2g():
     conn_db = pymysql.connect(host=config.host_mysql, user=config.user_mysql, password=config.password_mysql,
                               db=config.db_mysql)
     cursor = conn_db.cursor()
     cursor.execute(config.query_oss_hua_2g)
     result = cursor.fetchall()
-    with open("GET_DATA_FROM_OSS_HUAWEI_2G_CHECK.txt", "w") as test_file:
+    with open(config.path_test8, "w") as test_file:
         for row in result:
             test_file.write(str(row[0]) + ' | ' + str(row[1]) + ' | ' + str(row[2]) + '\n')
     return result
     cursor.close()
 
+
 def concat_oss_rpdb_data_binary_search_2g(oss_list, rpdb_list):
-
-
     concatenated_result = list()
 
     for oss_item in range(len(oss_list)):
 
-        item = int(oss_list[oss_item][0]) + int(oss_list[oss_item][2]) + int(oss_list[oss_item][3])
-
-        print("Item^ ", item)
+        item = str(oss_list[oss_item][0]) + str(oss_list[oss_item][2]) + str(oss_list[oss_item][3])
 
         low = 0
         found = False
@@ -61,49 +57,62 @@ def concat_oss_rpdb_data_binary_search_2g(oss_list, rpdb_list):
 
         while low <= high and not found:
             mid = (low + high) // 2
-            print("mid: ", mid)
+
             guess_controller = rpdb_list[mid][0]
-            print("guess_controller: ", guess_controller)
+
             if guess_controller is None:
                 guess_controller = 0
-            guess = guess_controller + rpdb_list[mid][2] + rpdb_list[mid][3]
-            print("guess: ", guess)
-            print("Item^ ", item)
+            guess = str(guess_controller) + str(rpdb_list[mid][2]) + str(rpdb_list[mid][3])
 
-            if oss_list[oss_item][0] is not None and int(guess) == int(item):
+            if oss_list[oss_item][0] is not None and str(guess) == str(item):
                 found = True
                 concatenated_result.append(oss_list[oss_item] + rpdb_list[mid])
-                print("FOUND: ", found)
 
 
 
 
 
 
-            elif oss_list[oss_item][0] is not None and int(guess) > int(item):
+
+            elif oss_list[oss_item][0] is not None and str(guess) > str(item):
 
                 high = mid - 1
 
-                print("high: ", high)
-
-            elif oss_list[oss_item][0] is not None and int(guess) < int(item):
-
-                print("high: ", low)
 
 
+            elif oss_list[oss_item][0] is not None and str(guess) < str(item):
 
-    with open("CONCATENATED_DATA_2G.txt", "w") as test_file:
+                low = mid + 1
+
+    with open(config.path_test9, "w") as test_file:
         for row in concatenated_result:
-            for item in row:
-                test_file.write(str(item) + '\t')
+            test_file.write(str(row) + '\n')
 
     return concatenated_result
 
+
 def write_gsm_huawei_to_coordinates_file(concatenated_data):
-    with open("written_DATA_2G.txt", "w") as test_file:
+    head = 'Sector	Latitude	Longitude	Azimuth	LAC	CI'
+
+    with open(config.remote_coordinates_file_path, "w") as test_file:
+        test_file.write(head + '\n')
+
         for row in concatenated_data:
-            for item in row:
-                test_file.write(str(item) + '\t')
+            test_file.write(f"{row[1]}\t"  # sector name
+                            f"{str(row[11])}\t"  # long
+                            f"{str(row[12])}\t"  # lat
+                            f"{str(row[14])}\t"  # az
+                            f"{row[2]}\t"  # lac
+                            f"{row[3]}\n")  # ci
 
 
+def write_gsm_huawei_to_antenna_file(concatenated_data):
+    head = 'Sector	Antenna Model	Electrical Tilt	Mechanical Tilt	Height	Azimuth'
 
+    with open(config.remote_antennas2g_file_path, "w") as test_file:
+        test_file.write(head + '\n')
+
+        for row in concatenated_data:
+            test_file.write(
+                row[1] + '\t' + str(row[10]) + '\t' + str(row[16]) + '\t' + str(row[15]) + '\t' + row[13] + '\t' + row[
+                    14] + '\n')
