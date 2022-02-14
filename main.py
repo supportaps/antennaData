@@ -3,12 +3,12 @@ from pstats import Stats
 
 import pymssql
 import pymysql
+import pyodbc
 
 import config
 from read_directory import read_antenna_directory, copy_antenna_file_to_remote
 from vdf.tech.gsm import gsm_coordinates_file
 from vdf.tech.lte import lte_antenna_file, write_to_antenna_file_lte, lte_util, lte_invalid_antenna_file
-
 
 
 def get_data_from_wbts_nsn():
@@ -107,12 +107,21 @@ def add_bts_name_to_list_hua(ucell_list, nodeb_list):
 
 
 def get_data_from_rpdb():
+    result_list_rpdb = []
+    result_list_rpdb_odbc = []
+
     conn_db = pymssql.connect(host=config.host_mssql, user=config.user_mssql, password=config.password_mssql,
                               database=config.db_mssql)
+    conn_db_odbc = pyodbc.connect(
+        f"DRIVER={config.driver_mssql};SERVER={config.host_mssql};DATABASE={config.db_mssql};UID={config.user_mssql};PWD={config.password_mssql}")
     cursor = conn_db.cursor()
+    cursor_odbc = conn_db_odbc.cursor()
     cursor.execute(config.query_rpdb_mentor)
-    result_list_rpdb = []
+    cursor_odbc.execute(config.query_rpdb_mentor)
+
     result_set = cursor.fetchall()
+    result_set_odbc = cursor_odbc.fetchall()
+
     with open("GET_DATA_FROM_RPDB.txt", "w") as test_file:
         for row in result_set:
             print("----->>>>>>", row[1][-2:])
@@ -121,11 +130,21 @@ def get_data_from_rpdb():
 
                 result_list_rpdb.append(row)
 
+    with open("GET_DATA_FROM_RPDB.txt", "w") as test_file:
+        for row in result_set_odbc:
+            print("----->>>>>>", row[1][-2:])
+            if row[1][-2:] != '_D' and row[1][-2:] != '_G':
+                print("RESULT LIST: ", row)
+
+                result_list_rpdb_odbc.append(tuple(row))
+
         def sortSecond(val):
             rnc_id_nonetype_check = val[0]
             if rnc_id_nonetype_check is None:
                 rnc_id_nonetype_check = 0
-            return rnc_id_nonetype_check + val[2] + val[3]
+
+            return int(
+                str(rnc_id_nonetype_check) + str(val[2]) + str(val[3]))  # val[0] - rnc, val[2] - LAC, val[3] - ci
 
         result_list_rpdb.sort(key=sortSecond)
         for row in result_list_rpdb:
@@ -173,6 +192,7 @@ def combined_list_from_rpdb_and_oss_to_antennas_file_zte(oss_list, rpdb_list):
         if item_oss3 is None:
             item_oss3 = 0
         # print('TYPE_ITENM',type(item_oss1),type(item_oss2))
+        concatenated_id_oss = int(str(item_oss3) + str(item_oss1) + str(item_oss2))
         low = 0
         found = False
         high = len(rpdb_list) - 1
@@ -184,17 +204,17 @@ def combined_list_from_rpdb_and_oss_to_antennas_file_zte(oss_list, rpdb_list):
             guess3 = rpdb_list[mid][0]  # RNC ID
             if guess3 is None:
                 guess3 = 0
-            # print('TYPE_GUESS',type(guess1),type(guess2))
-            if int(guess1) == int(item_oss1) and int(guess2) == int(item_oss2):
+            concatenated_guess = int(str(guess3) + str(guess1) + str(guess2))
+            # print('TYPE_GUESS',type(guess1),type(guess2),type(item_oss1),type(item_oss2))
+            if concatenated_guess == concatenated_id_oss:
                 found = True
                 concatenated_result.append(oss_list[oss_item] + rpdb_list[mid])
-            elif int(guess2) + int(guess1) + int(guess3) >= int(item_oss2) + int(item_oss1) + int(item_oss3):
+            elif concatenated_guess >= concatenated_id_oss:
                 high = mid - 1
-            elif int(guess2) + int(guess1) + int(guess3) <= int(item_oss2) + int(item_oss1) + int(item_oss3):
+            elif concatenated_guess <= concatenated_id_oss:
                 low = mid + 1
-    # print("concatenated result: ", concatenated_result)
 
-    with open("CONCATENATED_DATA_UMTS_ZTE.txt", "a") as test_file:
+    with open("CONCATENATED_DATA_UMTS_ZTE.txt", "w") as test_file:
         for item in concatenated_result:
             for raw in item:
                 test_file.write(str(raw) + '\n')
@@ -220,14 +240,11 @@ def get_oss_data_zte():
 
 
 def main():
-
-    #------------------------------------------------------------LTE/NSN-----
+    # ------------------------------------------------------------LTE/NSN-----
     res4g_rpdb = lte_antenna_file.get_rpdb_data_4g()
     res4g_oss = lte_antenna_file.get_oss_data_NSN4G()
 
     invalid_antenna_data = lte_invalid_antenna_file.get_invalid_lte_antennas_data()  # pandas data frame
-
-
 
     res4g_oss_nodeB_name = lte_antenna_file.get_oss_bts_data_NSN4g()
     NSN_concat_result = lte_antenna_file.concat_oss_rpdb_data_binary_search_4g(res4g_oss,
@@ -238,15 +255,13 @@ def main():
     nsn_changed_nodeb_abrv_IOT = lte_antenna_file.change_nodeb_name_nsn(iot_concat_result, res4g_oss_nodeB_name)
     print("NOKIA CONCAT RESULT", nsn_changed_nodeb_abrv)
 
-
-
     lte_antenna_file.write_lte_data_to_antennas_file_NSN(nsn_changed_nodeb_abrv)
     write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_IOT_TEST(nsn_changed_nodeb_abrv_IOT)
     write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_invalid_antennas_TEST(
         invalid_antenna_data)
-    #write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_test(nsn_changed_nodeb_abrv)
+    # write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_test(nsn_changed_nodeb_abrv)
 
-    #-------------------------------------------------------------LTE/NSN-----
+    # -------------------------------------------------------------LTE/NSN-----
 
     huawei_concat_result = lte_antenna_file.concat_oss_rpdb_data_binary_search_4g(
         lte_antenna_file.get_oss_data_huawei4g(), res4g_rpdb)
@@ -258,29 +273,18 @@ def main():
     # print("zte_concat_result", zte_concat_result)
     print("DONE")
 
-
-
     lte_antenna_file.write_lte_data_to_antennas_file_huawei(huawei_concat_result)
     lte_antenna_file.write_lte_data_to_antennas_file_zte(zte_concat_result)
 
-    #-------------------------------------------------------------LTE-----
-
+    # -------------------------------------------------------------LTE-----
 
     wcel_list = get_data_from_wcel_nsn()
     wbts_list = get_data_from_wbts_nsn()
     oss_data_list_nsn = add_bts_name_to_list_nsn(wcel_list, wbts_list)
     rpdb_list = get_data_from_rpdb()
     list_for_antenna_file = combined_list_from_rpdb_and_oss_to_antennas_file(oss_data_list_nsn, rpdb_list)
-
-
-
-
-
-
-
-    list_of_antenna_file_zte = combined_list_from_rpdb_and_oss_to_antennas_file_zte(get_oss_data_zte(), rpdb_list)
-
-
+    zte_oss_data = get_oss_data_zte()
+    list_of_antenna_file_zte = combined_list_from_rpdb_and_oss_to_antennas_file_zte(zte_oss_data, rpdb_list)
 
     tech = 'UMTS'
     equipment = 'RNC'
@@ -288,8 +292,6 @@ def main():
     antenna_number = 0
 
     with open("Antennas.txt", "a") as antennas_file:
-
-
 
         temp_nodeB_zte = ''
         temp_nodeB_id = 0
@@ -317,8 +319,6 @@ def main():
             nodeB_id = nodeB_id[:4]
             # print("nodeb_id", nodeB_id, ' - ', type(nodeB_id))
 
-
-
             if azimuth == 360 or azimuth in range(859, 999):
                 azimuth = 0
 
@@ -340,7 +340,7 @@ def main():
                                 f"{cellName}\t"
                                 f"{'true'}\t"
                                 f"{'5.0'}\t"
-                                f"{cellName + '/' + str(list_of_antenna_file_zte[row][4])}\t" #cellname plus sector id
+                                f"{cellName + '/' + str(list_of_antenna_file_zte[row][4])}\t"  # cellname plus sector id
                                 f"{antenna_profile_from_rpdb_zte}\t"  # antenna directory
                                 f"\t"
                                 f"{list_of_antenna_file_zte[row][13]}\t"  # coordinate
@@ -489,17 +489,18 @@ def main():
     write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_IOT(nsn_changed_nodeb_abrv_IOT)
 
     copy_antenna_file_to_remote()
-#------------------------------------------------2G
+    # ------------------------------------------------2G
     rpdb_2g = gsm_coordinates_file.get_data_from_rpdb_2G()
     oss_2g_huawei = gsm_coordinates_file.get_oss_data_huawei_2g()
-    concatenated_2g_data_huawei = gsm_coordinates_file.concat_oss_rpdb_data_binary_search_2g(oss_2g_huawei,rpdb_2g)
+    concatenated_2g_data_huawei = gsm_coordinates_file.concat_oss_rpdb_data_binary_search_2g(oss_2g_huawei, rpdb_2g)
     gsm_coordinates_file.write_gsm_huawei_to_coordinates_file(concatenated_2g_data_huawei)
-#------------------------------------------------Invalid lte nsn antennas
+    # ------------------------------------------------Invalid lte nsn antennas
 
-    #invalid_antenna_data = lte_util.get_invalid_lte_antennas_data()  # pandas data frame
-    #concatenated_invalid_antenna_data = concat_invalid_data(invalid_antenna_data,res4g_oss,res4g_rpdb)
-    #write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_invalid_antennas_TEST(concatenated_invalid_antenna_data)
+    # invalid_antenna_data = lte_util.get_invalid_lte_antennas_data()  # pandas data frame
+    # concatenated_invalid_antenna_data = concat_invalid_data(invalid_antenna_data,res4g_oss,res4g_rpdb)
+    # write_to_antenna_file_lte.write_lte_data_to_antennas_file_NSN_invalid_antennas_TEST(concatenated_invalid_antenna_data)
     copy_antenna_file_to_remote()
+
 
 if __name__ == '__main__':
     profiler = Profile()
