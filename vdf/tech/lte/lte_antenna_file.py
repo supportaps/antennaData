@@ -32,7 +32,7 @@ def get_oss_data_huawei4g():
     cursor = conn_db.cursor()
     cursor.execute(config.query_oss_hua4g)
     result = cursor.fetchall()
-    with open("../../../LTE_GET_DATA_FROM_RPDB_NSN_4G_CHECK.txt", "w") as test_file:
+    with open(config.path_test11, "w") as test_file:
         for row in result:
             test_file.write(str(row[0]) + ' | ' + str(row[1]) + ' | ' + str(row[2]) + ' | ' + str(
                 row[3]) + '\n')
@@ -189,7 +189,7 @@ def write_lte_data_to_antennas_file_huawei(concatenated_oss_rpdb_data):
     with open(config.local_antennas_file_lte, "a") as antennas_file:
         for row in range(len(concatenated_oss_rpdb_data)):
             antenna_profile_from_rpdb_hua = concatenated_oss_rpdb_data[row][5]
-            if '/' in antenna_profile_from_rpdb_hua and '.' in antenna_profile_from_rpdb_hua:
+            if '/' in antenna_profile_from_rpdb_hua or '.' in antenna_profile_from_rpdb_hua:
                 antenna_profile_from_rpdb_hua = antenna_profile_from_rpdb_hua.replace('/', '-')
                 antenna_profile_from_rpdb_hua = antenna_profile_from_rpdb_hua.replace('.', '-')
             antenna_directory_list = read_antenna_directory()
@@ -235,7 +235,7 @@ def write_lte_data_to_antennas_file_zte(concatenated_oss_rpdb_data):
         for row in range(len(concatenated_oss_rpdb_data)):
 
             antenna_profile_from_rpdb_zte = str(concatenated_oss_rpdb_data[row][9])
-            if '/' in antenna_profile_from_rpdb_zte and '.' in antenna_profile_from_rpdb_zte:
+            if '/' in antenna_profile_from_rpdb_zte or '.' in antenna_profile_from_rpdb_zte:
                 antenna_profile_from_rpdb_zte = antenna_profile_from_rpdb_zte.replace('/', '-')
                 antenna_profile_from_rpdb_zte = antenna_profile_from_rpdb_zte.replace('.', '-')
             antenna_directory_list = read_antenna_directory()
@@ -279,13 +279,13 @@ def  write_lte_data_to_antennas_file_NSN(concatenated_oss_rpdb_data):
     tech = 'LTE'
     head = "Technology	RNC Name	RNC Id	NodeB Name	NodeB Id	ENB ID	NodeB Longitude	NodeB Latitude	Sector Name	Active	Noise Figure	AntennaID	Antenna Model	Sector Keywords	Antenna Longitude	Antenna Latitude	Height	Mechanical DownTilt	Azimuth	Downlink Loss	Uplink Loss	RTT fix A Coefficient	RTT fix B Coefficient	RET ID	In Building	Cable Lengths(Calculated)	Sector Height Level(Calculated)"
 
-    with open(config.local_antennas_file_lte, "w") as antennas_file:
+    with open(config.local_antennas_file_lte, "a") as antennas_file:
         antennas_file.write(head)
         antennas_file.write('\n')
         for row in range(len(concatenated_oss_rpdb_data)):
 
             antenna_profile_from_rpdb_nsn = concatenated_oss_rpdb_data[row][6]
-            if '/' in antenna_profile_from_rpdb_nsn and '.' in antenna_profile_from_rpdb_nsn:
+            if '/' in antenna_profile_from_rpdb_nsn or '.' in antenna_profile_from_rpdb_nsn:
                 antenna_profile_from_rpdb_nsn = antenna_profile_from_rpdb_nsn.replace('/', '-')
                 antenna_profile_from_rpdb_nsn = antenna_profile_from_rpdb_nsn.replace('.', '-')
             antenna_directory_list = read_antenna_directory()

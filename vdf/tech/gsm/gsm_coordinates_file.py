@@ -30,6 +30,17 @@ def get_data_from_rpdb_2G():
         return result_list_rpdb
         cursor.close()
 
+def get_oss_data_zte_2g():
+    conn_db = pymysql.connect(host=config.host_mysql, user=config.user_mysql, password=config.password_mysql,
+                              db=config.db_mysql)
+    cursor = conn_db.cursor()
+    cursor.execute(config.query_oss_zte_2g)
+    result = cursor.fetchall()
+    with open(config.path_test12, "w") as test_file:
+        for row in result:
+            test_file.write(str(row[0]) + ' | ' + str(row[1]) + ' | ' + str(row[2]) + '\n')
+    return result
+    cursor.close()
 
 def get_oss_data_huawei_2g():
     conn_db = pymysql.connect(host=config.host_mysql, user=config.user_mysql, password=config.password_mysql,
@@ -43,6 +54,17 @@ def get_oss_data_huawei_2g():
     return result
     cursor.close()
 
+def get_oss_data_nokia_2g():
+    conn_db = pymysql.connect(host=config.host_mysql_v, user=config.user_mysql_v, password=config.password_mysql_v,
+                              db=config.db_mysql_v)
+    cursor = conn_db.cursor()
+    cursor.execute(config.query_oss_nokia_2g)
+    result = cursor.fetchall()
+    #with open(config.path_test8, "w") as test_file:
+        #for row in result:
+            #test_file.write(str(row[0]) + ' | ' + str(row[1]) + ' | ' + str(row[2]) + '\n')
+    return result
+    cursor.close()
 
 def concat_oss_rpdb_data_binary_search_2g(oss_list, rpdb_list):
     concatenated_result = list()
@@ -105,6 +127,29 @@ def write_gsm_huawei_to_coordinates_file(concatenated_data):
                             f"{row[2]}\t"  # lac
                             f"{row[3]}\n")  # ci
 
+def write_gsm_nokia_to_coordinates_file(concatenated_data):
+
+    with open(config.remote_coordinates_file_path, "a") as test_file:
+
+        for row in concatenated_data:
+            test_file.write(f"{row[1]}\t"  # sector name
+                            f"{str(row[11])}\t"  # long
+                            f"{str(row[12])}\t"  # lat
+                            f"{str(row[14])}\t"  # az
+                            f"{row[2]}\t"  # lac
+                            f"{row[3]}\n")  # ci
+
+def write_gsm_zte_to_coordinates_file(concatenated_data):
+
+    with open(config.remote_coordinates_file_path, "a") as test_file:
+
+        for row in concatenated_data:
+            test_file.write(f"{row[1]}\t"  # sector name
+                            f"{str(row[11])}\t"  # long
+                            f"{str(row[12])}\t"  # lat
+                            f"{str(row[14])}\t"  # az
+                            f"{row[2]}\t"  # lac
+                            f"{row[3]}\n")  # ci
 
 def write_gsm_huawei_to_antenna_file(concatenated_data):
     head = 'Sector	Antenna Model	Electrical Tilt	Mechanical Tilt	Height	Azimuth'
